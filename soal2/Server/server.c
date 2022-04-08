@@ -9,17 +9,42 @@
 
 #define PORT 8080
 
+int setup_sock();
+void read_str();
+void send_str();
+void handle_register();
+void handle_login();
+
+int server_fd,
+    new_socket, valread;
+struct sockaddr_in address;
+int opt = 1;
+int addrlen = sizeof(address);
+char buffer[5120] = {0};
+
 int main(int argc, char const *argv[])
 {
-    int server_fd, new_socket, valread;
-    struct sockaddr_in address;
-    int opt = 1;
-    int addrlen = sizeof(address);
-    char buffer[5120] = {0};
+    if (setup_sock() < 0)
+        return -1;
 
-    char c_username[50];
-    char c_password[50];
+    while (true)
+    {
+        read_str(buffer);
+        if (strcmp(buffer, "register") == 0)
+        {
+            handle_register();
+        }
+        else if (strcmp(buffer, "login") == 0)
+        {
+            handle_login();
+        }
+    }
 
+    return 0;
+}
+
+int setup_sock()
+{
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("socket failed");
@@ -53,9 +78,25 @@ int main(int argc, char const *argv[])
         perror("accept");
         exit(EXIT_FAILURE);
     }
+}
 
+void send_str(char *str)
+{
+    send(new_socket, str, sizeof(str), 0);
+}
+
+void read_str(char *str)
+{
+    read(new_socket, str, sizeof(str));
+}
+
+void handle_register()
+{
     while (true)
     {
+        char c_username[50];
+        char c_password[50];
+
         read(new_socket, buffer, 5120);
         strcpy(c_username, buffer);
 
@@ -67,8 +108,10 @@ int main(int argc, char const *argv[])
         while (fgets(currentline, sizeof(currentline), users_file) != NULL)
         {
             char *username = strtok(currentline, ":");
+            char *password = strtok(NULL, ":");
             if (strcmp(username, c_username) == 0)
             {
+                printf("%s", password);
                 user_exist = true;
             }
         }
@@ -76,6 +119,7 @@ int main(int argc, char const *argv[])
         if (user_exist)
         {
             send(new_socket, "exist", sizeof("exist"), 0);
+            continue;
         }
         else
         {
@@ -88,8 +132,45 @@ int main(int argc, char const *argv[])
             fclose(users_file);
 
             printf("User %s is registered", c_username);
+            break;
         }
     }
+}
 
-    return 0;
+void handle_login()
+{
+    char c_username[50];
+    char c_password[50];
+
+    read(new_socket, buffer, 5120);
+    strcpy(c_username, buffer);
+
+    read(new_socket, buffer, 5120);
+    strcpy(c_password, buffer);
+
+    FILE *users_file;
+    users_file = fopen("users.txt", "a+");
+    char currentline[100];
+
+    bool is_loggedin = false;
+    while (fgets(currentline, sizeof(currentline), users_file) != NULL)
+    {
+        char *username = strtok(currentline, ":");
+        char *password = strtok(NULL, ":");
+        if (strcmp(username, c_username) == 0 && strcmp(password, c_password))
+        {
+            is_loggedin = true;
+        }
+    }
+    fclose(users_file);
+
+    if (is_loggedin)
+    {
+        send(new_socket, c_username, sizeof(c_username), 0);
+        printf("User %s has logged in", c_username);
+    }
+    else
+    {
+        send(new_socket, "failed", sizeof("failed"), 0);
+    }
 }
