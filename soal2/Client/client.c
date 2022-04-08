@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <regex.h>
+#include <ctype.h>
 
 #define PORT 8080
 #define HOST "127.0.0.1"
@@ -15,6 +15,7 @@
 void clear_screen();
 void send_str();
 void read_str();
+bool check_password();
 
 struct sockaddr_in address;
 int sock = 0, valread;
@@ -64,12 +65,20 @@ int main(int argc, char const *argv[])
         if (strcmp(input, "1") == 0)
         {
             bool done_register = false;
+
             while (!done_register)
             {
                 printf("Username: ");
                 scanf("%s", username);
                 printf("Password: ");
                 scanf("%s", password);
+
+                if (!check_password(password))
+                {
+                    clear_screen();
+                    printf("Invalid password format\n");
+                    continue;
+                }
 
                 send_str(username);
 
@@ -110,4 +119,29 @@ void send_str(char *str)
 void read_str(char *str)
 {
     read(sock, str, sizeof(str));
+}
+
+bool check_password(char *password)
+{
+    const char *p = password;
+    char c;
+    int chars = 0;
+    int nupper = 0;
+    int nlower = 0;
+    int ndigit = 0;
+    while (*p)
+    {
+        c = *p++;
+        chars++;
+        if (isupper(c))
+            nupper++;
+        else if (islower(c))
+            nlower++;
+        else if (isdigit(c))
+            ndigit++;
+        else
+            continue;
+    }
+
+    return chars > 5 && nupper && nlower && ndigit;
 }
