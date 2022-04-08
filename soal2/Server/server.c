@@ -15,7 +15,10 @@ int main(int argc, char const *argv[])
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
+    char buffer[5120] = {0};
+
+    char c_username[50];
+    char c_password[50];
 
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
@@ -49,6 +52,43 @@ int main(int argc, char const *argv[])
     {
         perror("accept");
         exit(EXIT_FAILURE);
+    }
+
+    while (true)
+    {
+        read(new_socket, buffer, 5120);
+        strcpy(c_username, buffer);
+
+        FILE *users_file;
+        users_file = fopen("users.txt", "a+");
+        char currentline[100];
+
+        bool user_exist = false;
+        while (fgets(currentline, sizeof(currentline), users_file) != NULL)
+        {
+            char *username = strtok(currentline, ":");
+            if (strcmp(username, c_username) == 0)
+            {
+                user_exist = true;
+            }
+        }
+
+        if (user_exist)
+        {
+            send(new_socket, "exist", sizeof("exist"), 0);
+        }
+        else
+        {
+            send(new_socket, "regist", sizeof("regist"), 0);
+
+            read(new_socket, buffer, 5120);
+            strcpy(c_password, buffer);
+
+            fprintf(users_file, "%s:%s\n", c_username, c_password);
+            fclose(users_file);
+
+            printf("User %s is registered", c_username);
+        }
     }
 
     return 0;
