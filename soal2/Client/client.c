@@ -18,7 +18,7 @@ void send_str();
 void read_str();
 bool check_password();
 void register_user();
-void login();
+void login(char user[], bool *is_loggedin);
 
 struct sockaddr_in address;
 int sock = 0, valread;
@@ -27,30 +27,47 @@ char buffer[1024] = {0};
 
 int main(int argc, char const *argv[])
 {
+    char user[50];
+    bool is_loggedin = false;
+
     if (setup_sock() < 0)
         return -1;
 
     while (true)
     {
-        printf("===== Welcome to Bluemary Online Judge =====\n");
-        printf("Menu:\n");
-        printf("1. Register\n");
-        printf("2. Login\n");
-
-        char input[10];
-        scanf("%s", input);
-
-        clear_screen();
-
-        if (strcmp(input, "1") == 0)
+        if (is_loggedin)
         {
-            send_str("register");
-            register_user();
+            char command[20];
+            printf("CMD: ");
+            scanf("%s", command);
+
+            if (strcmp(command, "add") == 0)
+            {
+                send_str("add");
+            }
         }
-        else if (strcmp(input, "2") == 0)
+        else
         {
-            send_str("login");
-            login();
+            printf("===== Welcome to Bluemary Online Judge =====\n");
+            printf("Menu:\n");
+            printf("1. Register\n");
+            printf("2. Login\n");
+
+            char input[10];
+            scanf("%s", input);
+
+            clear_screen();
+
+            if (strcmp(input, "1") == 0)
+            {
+                send_str("register");
+                register_user();
+            }
+            else if (strcmp(input, "2") == 0)
+            {
+                send_str("login");
+                login(user, &is_loggedin);
+            }
         }
     }
 
@@ -64,7 +81,7 @@ void clear_screen()
 
 void send_str(char *str)
 {
-    send(sock, str, sizeof(str), 0);
+    send(sock, str, strlen(str), 0);
 }
 
 void read_str(char *str)
@@ -99,8 +116,8 @@ bool check_password(char *password)
 
 void register_user()
 {
-    char username[50];
-    char password[50];
+    char username[50] = {0};
+    char password[50] = {0};
 
     bool done_register = false;
 
@@ -136,10 +153,10 @@ void register_user()
     }
 }
 
-void login()
+void login(char user[], bool *is_loggedin)
 {
-    char username[50];
-    char password[50];
+    char username[50] = {0};
+    char password[50] = {0};
 
     bool done_login = false;
 
@@ -170,6 +187,8 @@ void login()
         else
         {
             printf("Login user %s success\n", buffer);
+            strcpy(user, buffer);
+            *is_loggedin = true;
         }
         done_login = true;
     }
