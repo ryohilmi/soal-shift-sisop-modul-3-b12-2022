@@ -236,7 +236,7 @@ Membuat fungsi `no_txt()` yang digunakan untuk membuat file no.txt sekaligus tul
 ![set_password](/uploads/484a12c17afca7f90d5e7790e34c8a39/set_password.png)
 
 ## Kendala
-Kendala-kendala saat progress pengerjaan soal nomor 2 :
+Kendala-kendala saat progress pengerjaan soal nomor 1 :
 1. Pada poin 2b, sulit untuk mengimplementasikan format base64, karena sebelumnya saya membuat base46_map tetapi mengalami error.
 2. Mengalami error saat set password pada int main
 
