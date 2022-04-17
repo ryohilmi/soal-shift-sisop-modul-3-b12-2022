@@ -239,3 +239,272 @@ Membuat fungsi `no_txt()` yang digunakan untuk membuat file no.txt sekaligus tul
 Kendala-kendala saat progress pengerjaan soal nomor 2 :
 1. Pada poin 2b, sulit untuk mengimplementasikan format base64, karena sebelumnya saya membuat base46_map tetapi mengalami error.
 2. Mengalami error saat set password pada int main
+
+## SOAL 3
+Nami adalah seorang pengoleksi harta karun handal. Karena Nami memiliki waktu luang, Nami pun mencoba merapikan harta karun yang dimilikinya berdasarkan jenis/tipe/kategori/ekstensi harta karunnya. Setelah harta karunnya berhasil dikategorikan, Nami pun mengirimkan harta karun tersebut ke kampung halamannya.
+Contoh jika program pengkategorian dijalankan
+## A.
+Hal pertama yang perlu dilakukan oleh Nami adalah mengextract zip yang diberikan ke dalam folder “/home/[user]/shift3/”. Kemudian working directory program akan berada pada folder “/home/[user]/shift3/hartakarun/”. Karena Nami tidak ingin ada file yang tertinggal, program harus mengkategorikan seluruh file pada working directory secara rekursif
+> Untuk unzip dapat dilakukan secara manual, folder hartakarun hasil unzip diletakkan pada folder yang dengan folder soal3.c
+```sh
+pthread_t thread_ID[500];
+char temp_file[2000][2000];
+
+int is_regular(const char *path){
+  struct stat reg_path_stat;
+  stat(path, &reg_path_stat);
+  return S_ISREG(reg_path_stat.st_mode);
+}
+
+void recursive_file(char *base_path, int *i)
+{
+  char path[1000];
+  struct dirent *struct_dir;
+  DIR *dir = opendir(base_path);
+
+  while ((struct_dir = readdir(dir)) != NULL)
+  {
+    if (strcmp(struct_dir->d_name, "..") != 0 && strcmp(struct_dir->d_name, ".") != 0)
+    {
+        strcpy(path, base_path), strcat(path, "/"),strcat(path, struct_dir->d_name) ;
+
+        if(is_regular(path)){
+          strcpy(temp_file[*i], path);
+          *i = *i + 1;
+        }
+        else{
+          recursive_file(path, i);
+        }
+    }
+  }
+    closedir(dir);
+}
+```
+## B.
+Semua file harus berada di dalam folder, jika terdapat file yang tidak memiliki
+ekstensi, file disimpan dalam folder “Unknown”. Jika file hidden, masuk folder
+“Hidden”
+```sh
+void *move_file(void *arg){
+  char str[999], temp[999], temp_2[999], temp_3[999], temp_4[999], path[1000], tempDest[1000], cwd[1000], file_name[1000], ext_1[1000], ext_2[1000];
+
+  int isFile = is_regular(path);
+  getcwd(cwd, sizeof(cwd)), strcpy(path, (char*) arg), strcpy(temp_4, path);
+  
+  char *ext_3, dot1 = '.';
+
+  ext_3 = strchr(temp_4, dot1);
+  strcpy(temp, path);
+
+  char *token=strtok(temp, "/");
+  do{
+       sprintf(file_name, "%s", token);
+      token = strtok(NULL, "/");
+  }
+  while(token != NULL);
+
+  strcpy(temp, path), strcpy(temp_2, file_name), strcpy(temp_3, file_name);
+
+  int total = 0;
+  char *token2=strtok(temp_2, ".");
+
+  sprintf(ext_2, "%s", token2);
+    do
+    {
+      total++;
+
+      sprintf(ext_1, "%s", token2);
+
+      token2=strtok(NULL, ".");
+    }
+
+    while(token2 != NULL);
+
+  char dot = '.', first = temp_3[0];
+
+  if(dot == first) 
+    {
+     strcpy(ext_1, "Hidden");
+    }
+
+  else if(total >= 3)
+      {
+        strcpy(ext_1, ext_3+1);
+      }
+
+  else if (total <=1 )
+      {
+        strcpy(ext_1, "Unknown");
+      }
+
+  int i = 0;
+  do
+  {
+    ext_1[i] = tolower(ext_1[i]);
+    i++;
+  }
+  while(i < sizeof(ext_1));
+
+  strcpy(temp, (char*) arg);
+  mkdir(ext_1, 0777);
+  strcat(cwd, "/"), strcat(cwd,ext_1),  strcat(cwd, "/"), strcat(cwd, file_name), strcpy(tempDest, cwd), rename(temp, tempDest);
+  return (void *) 1;
+}
+```
+## C.
+Agar proses kategori bisa berjalan lebih cepat, setiap 1 file yang dikategorikan dioperasikan oleh 1 thread.
+```sh
+int main(int argc, char *argv[]) {
+  void *status;
+  char base_path[1000], cwd[1000];
+  int iter = 0;
+
+    getcwd(cwd, sizeof(cwd));  strcpy(base_path, cwd); 
+    recursive_file(base_path, &iter);
+    pthread_t thread_ID[iter];
+      int i = 0;
+      do
+      {
+          pthread_create(&thread_ID[i], NULL, move_file, (void*)temp_file[i]);
+          pthread_join(thread_ID[i], &status);
+          i++;
+      }
+      while (i<iter);
+      exit(EXIT_FAILURE);
+
+}
+```
+## D.
+Untuk mengirimkan file ke Cocoyasi Village, nami menggunakan program client-server. Saat program client dijalankan, maka folder /home/[user]/shift3/hartakarun/” akan di-zip terlebih dahulu dengan nama
+“hartakarun.zip” ke working directory dari program client
+```sh
+int main() {
+    struct sockaddr_in server_addr;
+    int     s;
+    int         sourse_fd;
+    char        buf[MAXBUF];
+    int         file_name_len, read_len;
+    /* socket() */
+    s = socket(AF_INET, SOCK_STREAM, 0);
+    if(s == -1) {
+        return 1;
+    }
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = inet_addr(IP);
+    server_addr.sin_port = htons(PORT);
+
+    if(connect(s, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("connect : ");
+        printf("fail to connect.\n");
+        close(s);
+        return 1;
+    }
+
+    memset(buf, 0x00, MAXBUF);
+    printf("write file name to send to the server:  ");
+    scanf("%s", buf);
+
+    printf(" > %s\n", buf);
+    file_name_len = strlen(buf);
+
+    send(s, buf, file_name_len, 0);
+    sourse_fd = open(buf, O_RDONLY);
+    if(!sourse_fd) {
+        perror("Error : ");
+        return 1;
+    }
+
+    while(1) {
+        memset(buf, 0x00, MAXBUF);
+        read_len = read(sourse_fd, buf, MAXBUF);
+        send(s, buf, read_len, 0);
+        if(read_len == 0) {
+            break;
+        }
+
+    }
+
+    return 0;
+}
+```
+## E.
+Client dapat mengirimkan file “hartakarun.zip” ke server dengan mengirimkan
+command berikut ke server
+```sh
+int main() {
+    int server_sock;
+    int client_sock;
+    int des; 
+    struct sockaddr_in server_addr, client_addr;
+    int client_len, read_len, fileRead_len;   
+    char buf[MAXBUF];
+
+    int check_bind;
+    client_len = sizeof(client_addr);
+
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(server_sock == -1) {
+        perror("socket error : ");
+        exit(0);
+    }
+
+    bzero(&server_addr, sizeof(server_addr));
+    server_addr.sin_family       = AF_INET;
+    server_addr.sin_addr.s_addr  = htonl(INADDR_ANY);
+    server_addr.sin_port         = htons(PORT);
+
+    if(bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) > 0) {
+        perror("bind error : ");
+        exit(0);
+    }
+
+    if(listen(server_sock, 5) != 0) {
+        perror("listen error : ");
+    }
+
+    while(1) {
+        char file_name[MAXBUF]; 
+        memset(buf, 0x00, MAXBUF);
+
+        client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &client_len);
+        printf("New Client Connect : %s\n", inet_ntoa(client_addr.sin_addr));
+
+        read_len = read(client_sock, buf, MAXBUF);
+        if(read_len > 0) {
+            strcpy(file_name, buf);
+            printf("%s > %s\n", inet_ntoa(client_addr.sin_addr), file_name);
+        } else {
+            close(client_sock);
+            break;
+        }
+
+        des = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0700);
+        if(!des) {
+            perror("file open error : ");
+            break;
+        }   
+        while(1) {
+            memset(buf, 0x00, MAXBUF);
+            fileRead_len = read(client_sock, buf, MAXBUF);
+            write(des, buf, fileRead_len);
+            if(fileRead_len == EOF | fileRead_len == 0) {
+                printf("finish file\n");
+                break;
+            }
+        }
+
+        close(client_sock);
+        close(des);
+    }
+    close(server_sock);
+    return 0;
+}
+```
+## Dokumentasi Pengerjaan
+![image](/uploads/479c1ba8f00a4c3b7b35cffdbefa710e/image.png)
+![image](/uploads/995cf74c343c3557293a72c17b2e04ac/image.png)
+![image](/uploads/08af74b513a1cba38a6ce6b3982227c7/image.png)
+## Kendala
+- Praktikan mengalami kesulitan dalam menemukan bagaimana cara melakukan unzip tanpa menggunakan bash, sehingga waktu pengerjaan terhabis dalam kendala ini
+- Koneksi client menuju server terhambat
+- Pembuatan fungsi memindahkan file cukup mengalami kendala
