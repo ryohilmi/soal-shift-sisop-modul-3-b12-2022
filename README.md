@@ -240,6 +240,198 @@ Kendala-kendala saat progress pengerjaan soal nomor 1 :
 1. Pada poin 2b, sulit untuk mengimplementasikan format base64, karena sebelumnya saya membuat base46_map tetapi mengalami error.
 2. Mengalami error saat set password pada int main
 
+# Soal 2
+### Penjelasan Soal
+Pada soal 2, praktikan diminta untuk membuat sebuah program server-client menggunakan socket dengan konsep online judge. Terdapat beberapa command yang perlu diimplementasi seperti add, see, dan download.
+
+## 1.a
+Untuk melakukan registrasi, user perlu memasukkan username dan password. Pertama-tama, username akan dikirim ke server dan mengunggu respon dari server. Apabila username yang digunakan sudah terdaftar, user akan diminta untuk memasukkan ulang usernamenya. Akan dilakukan juga pengecekan password sesuai format yang sudah ditentukan. Berikut kode register pada client
+```c
+char username[50];
+char password[50];
+
+bool done_register = false;
+
+while (!done_register)
+{
+    printf("Username: ");
+    scanf("%s", username);
+    printf("Password: ");
+    scanf("%s", password);
+
+    if (!check_password(password))
+    {
+        clear_screen();
+        printf("Invalid password format\n");
+        continue;
+    }
+
+    send(sock, username, sizeof(username), 0);
+
+    read(sock, buffer, sizeof("buffer"));
+    if (strcmp(buffer, "exist") == 0)
+    {
+        clear_screen();
+        printf("Username is already registered\n");
+        continue;
+    }
+
+    send(sock, password, sizeof(password), 0);
+
+    clear_screen();
+    printf("Register success\n");
+    done_register = true;
+}
+```
+
+Jika registrasi berhasil, username dan password yang telah didaftarkan akan masuk ke file `users.txt` dengan format username:password. Kode handle register pada server:
+```c
+while (true)
+{
+    char c_username[50] = {0};
+    char c_password[50] = {0};
+
+    read(new_socket, c_username, 1024);
+
+    FILE *users_file;
+    users_file = fopen("users.txt", "a+");
+    char currentline[100];
+
+    bool user_exist = false;
+    while (fgets(currentline, sizeof(currentline), users_file) != NULL)
+    {
+        char *username = strtok(currentline, ":");
+        char *password = strtok(NULL, ":");
+        if (strcmp(username, c_username) == 0)
+        {
+            printf("%s", password);
+            user_exist = true;
+        }
+    }
+
+    if (user_exist)
+    {
+        send(new_socket, "exist", strlen("exist"), 0);
+        continue;
+    }
+    else
+    {
+        send(new_socket, "regist", strlen("regist"), 0);
+
+        read(new_socket, c_password, 1024);
+
+        fprintf(users_file, "%s:%s\n", c_username, c_password);
+        fclose(users_file);
+
+        printf("User %s is registered", c_username);
+        break;
+    }
+}
+```
+
+## 1.b
+Saat server pertama kali dijalankan, akan dibuat file `problems.tsv` untuk menampung problem-problem yang akan diinput oleh user
+```c
+FILE *database;
+  database = fopen("problems.tsv", "a+");
+  fclose(database);
+```
+
+## 1.c
+User dapat menambahkan problem baru dengan menggunakan command `add`. Setelah command dimasukkan, server akan meminta judul problem dan path dari file-file yang dibutuhkan.
+```c
+char judul[50];
+char desc[150];
+char input[150];
+char output[150];
+
+char dir_buffer[200];
+char temp[50];
+FILE *database;
+
+bool done_judul = false;
+while (!done_judul)
+{
+    printf("Judul problem: ");
+    scanf("%s", judul);
+
+    database = fopen("problems.tsv", "a+");
+    char currentline[100];
+
+    bool judul_exist = false;
+    while (fgets(currentline, sizeof(currentline), database) != NULL)
+    {
+        char *cur_judul = strtok(currentline, "\t");
+        if (strcmp(judul, cur_judul) == 0)
+        {
+            judul_exist = true;
+            printf("Problem name is used\n");
+        }
+    }
+
+    if (feof(database) && !judul_exist)
+    {
+        done_judul = true;
+    }
+
+    fclose(database);
+}
+
+printf("Filepath description.txt: ");
+scanf("%s", temp);
+sprintf(desc, "%s/%s", client_path, temp);
+
+printf("Filepath input.txt: ");
+scanf("%s", temp);
+sprintf(input, "%s/%s", client_path, temp);
+
+printf("Filepath output.txt: ");
+scanf("%s", temp);
+sprintf(output, "%s/%s", client_path, temp);
+
+database = fopen("problems.tsv", "a+");
+fprintf(database, "%s\t%s\n", judul, user);
+fclose(database);
+
+mkdir(judul, 0777);
+
+sprintf(dir_buffer, "%s/description.txt", judul);
+copy_file(desc, dir_buffer);
+sprintf(dir_buffer, "%s/input.txt", judul);
+copy_file(input, dir_buffer);
+sprintf(dir_buffer, "%s/output.txt", judul);
+copy_file(output, dir_buffer);
+```
+
+## 1.d
+User dapat memasukkan command ‘see’ yang berguna untuk menampilkan seluruh judul problem yang ada beserta authornya
+```c
+FILE *users_file;
+users_file = fopen("problems.tsv", "r");
+char currentline[100];
+
+bool user_exist = false;
+while (fgets(currentline, sizeof(currentline), users_file) != NULL)
+{
+    char *judul = strtok(currentline, "\t");
+    char *author = strtok(NULL, "\t");
+
+    printf("%s by %s", judul, author);
+}
+```
+
+## Dokumentasi Pengerjaan
+![image](https://cdn.discordapp.com/attachments/755737092507566270/965258654540521523/unknown.png)
+![image](https://cdn.discordapp.com/attachments/755737092507566270/965258851303690310/unknown.png)
+![image](https://cdn.discordapp.com/attachments/755737092507566270/965258920383897620/unknown.png)
+
+## Kendala
+- Komunikasi server dan client terhambat
+- Pada saat melakukan recieve di server, data dibaca dimulai dari index 1, yang menyebabkan string tersebut dianggap string kosong dan menimbulkan error
+![](https://cdn.discordapp.com/attachments/744789471609749570/965241537376161882/unknown.png)
+![](https://cdn.discordapp.com/attachments/744789471609749570/965241557961805924/unknown.png)
+- String pada c
+
 ## SOAL 3
 Nami adalah seorang pengoleksi harta karun handal. Karena Nami memiliki waktu luang, Nami pun mencoba merapikan harta karun yang dimilikinya berdasarkan jenis/tipe/kategori/ekstensi harta karunnya. Setelah harta karunnya berhasil dikategorikan, Nami pun mengirimkan harta karun tersebut ke kampung halamannya.
 Contoh jika program pengkategorian dijalankan
