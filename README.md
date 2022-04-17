@@ -504,6 +504,7 @@ int main() {
 ![image](/uploads/479c1ba8f00a4c3b7b35cffdbefa710e/image.png)
 ![image](/uploads/995cf74c343c3557293a72c17b2e04ac/image.png)
 ![image](/uploads/08af74b513a1cba38a6ce6b3982227c7/image.png)
+![image](/uploads/32762c02da30f26f44fe5ec9843c03ff/image.png)
 ## Kendala
 - Praktikan mengalami kesulitan dalam menemukan bagaimana cara melakukan unzip tanpa menggunakan bash, sehingga waktu pengerjaan terhabis dalam kendala ini
 - Koneksi client menuju server terhambat
