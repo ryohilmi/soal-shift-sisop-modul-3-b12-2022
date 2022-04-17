@@ -139,3 +139,5 @@ int main(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
 
 }
+
+//REF: https://gitlab.com/sisopitb05/soal-shift-sisop-modul-3-itb05-2022/-/tree/main/soal3
